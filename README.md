@@ -205,6 +205,3 @@ pip install -r requirements.txt
 
 **Padma Sanjana**
 
-Full Stack Developer
-
-Tech Birds Consulting Pvt. Ltd.
