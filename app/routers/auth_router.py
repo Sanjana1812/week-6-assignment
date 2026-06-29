@@ -9,10 +9,13 @@ from app.schemas.user_schema import (
     UserLogin,
     TokenResponse,
     UserProfile,
+    RefreshTokenRequest,
+    AccessTokenResponse,
 )
 from app.services.auth_service import (
     register_user,
     login_user,
+    refresh_access_token,
 )
 from app.utils.auth import get_current_user
 
@@ -45,6 +48,18 @@ def login(
     return login_user(db, user)
 
 
+@router.post(
+    "/refresh-token",
+    response_model=AccessTokenResponse
+)
+def refresh_token(
+    token: RefreshTokenRequest
+):
+    return refresh_access_token(
+        token.refresh_token
+    )
+
+
 @router.get(
     "/me",
     response_model=UserProfile
@@ -53,3 +68,20 @@ def get_me(
     current_user: User = Depends(get_current_user)
 ):
     return current_user
+
+
+@router.get(
+    "/profile",
+    response_model=UserProfile
+)
+def get_profile(
+    current_user: User = Depends(get_current_user)
+):
+    return current_user
+
+
+@router.post("/logout")
+def logout():
+    return {
+        "message": "Logged out successfully"
+    }

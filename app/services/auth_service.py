@@ -1,13 +1,23 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-from app.utils.hash import verify_password
-from app.utils.token import create_access_token
+
 from app.models.user_model import User
 from app.repositories.user_repository import (
     get_user_by_email,
     create_user,
+    get_all_users,
 )
-from app.utils.hash import hash_password
+
+from app.utils.hash import (
+    hash_password,
+    verify_password,
+)
+
+from app.utils.token import (
+    create_access_token,
+    create_refresh_token,
+    verify_token,
+)
 
 
 def register_user(db: Session, user):
@@ -28,6 +38,8 @@ def register_user(db: Session, user):
     )
 
     return create_user(db, new_user)
+
+
 def login_user(db: Session, user):
 
     existing_user = get_user_by_email(db, user.email)
@@ -38,13 +50,23 @@ def login_user(db: Session, user):
             detail="Invalid email or password"
         )
 
-    if not verify_password(user.password, existing_user.password):
+    if not verify_password(
+        user.password,
+        existing_user.password
+    ):
         raise HTTPException(
             status_code=401,
             detail="Invalid email or password"
         )
 
-    token = create_access_token(
+    access_token = create_access_token(
+        {
+            "sub": existing_user.email,
+            "role": existing_user.role
+        }
+    )
+
+    refresh_token = create_refresh_token(
         {
             "sub": existing_user.email,
             "role": existing_user.role
@@ -52,6 +74,34 @@ def login_user(db: Session, user):
     )
 
     return {
-        "access_token": token,
+        "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer"
     }
+
+
+def refresh_access_token(refresh_token: str):
+
+    payload = verify_token(refresh_token)
+
+    if payload is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid Refresh Token"
+        )
+
+    access_token = create_access_token(
+        {
+            "sub": payload.get("sub"),
+            "role": payload.get("role")
+        }
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
+
+
+def get_all_employees(db: Session):
+    return get_all_users(db)
